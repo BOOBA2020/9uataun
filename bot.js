@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, Routes } = require('discord.js');
 const { REST } = require('@discordjs/rest');
 const admin = require('firebase-admin');
+const http = require('http');
 require('dotenv').config();
 
 // Initialize Firebase Admin SDK
@@ -173,6 +174,15 @@ async function getUserIdFromUsername(username) {
     return null;
   }
 }
+const server = http.createServer((req, res) => {
+  res.writeHead(200, { 'Content-Type': 'text/plain' });
+  res.end('Discord Bot is online');
+});
 
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`✅ HTTP server listening on port ${PORT} for Render health checks`);
+});
 // Login
 client.login(process.env.DISCORD_TOKEN);
+
