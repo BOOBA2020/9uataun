@@ -9,7 +9,7 @@ const serviceAccount = {
   type: "service_account",
   project_id: "pd99newbro",
   private_key_id: "c7807a4082d0c7714d0ee1bed4c4ed0bdb770b55",
-  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'), // Store in .env!
+  private_key: process.env.FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n'),
   client_email: "firebase-adminsdk-fbsvc@pd99newbro.iam.gserviceaccount.com",
   client_id: "111359717278596276727",
   auth_uri: "https://accounts.google.com/o/oauth2/auth",
@@ -26,11 +26,12 @@ admin.initializeApp({
 const db = admin.database();
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-// Command definitions
+// Command definitions - BOTH COMMANDS REQUIRE ADMIN PERMS
 const commands = [
   new SlashCommandBuilder()
     .setName('stats')
-    .setDescription('View player stats from Firebase')
+    .setDescription('View player stats from Firebase (Admin Only)')
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // ADMIN ONLY
     .addStringOption(option =>
       option.setName('username')
         .setDescription('Roblox username')
@@ -39,7 +40,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName('setstats')
     .setDescription('Admin: Set player stats')
-    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // ADMIN ONLY
     .addStringOption(option =>
       option.setName('username')
         .setDescription('Roblox username')
@@ -60,39 +61,53 @@ const commands = [
         .setRequired(true))
 ];
 
-// Register commands
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_TOKEN);
 
-(async () => {
+// Register commands AFTER bot is ready
+client.once('ready', async () => {
+  console.log(`✅ Logged in as ${client.user.tag}!`);
+  
   try {
-    console.log('Registering slash commands...');
-    await rest.put(
-      Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID),
-      { body: commands }
-    );
-    console.log('Commands registered!');
+    console.log('🔄 Registering slash commands...');
+    
+    if (process.env.GUILD_ID) {
+      // Guild-specific commands
+      await rest.put(
+        Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID),
+        { body: commands }
+      );
+      console.log(`✅ Commands registered for guild: ${process.env.GUILD_ID}`);
+    } else {
+      // Global commands
+      await rest.put(
+        Routes.applicationCommands(client.user.id),
+        { body: commands }
+      );
+      console.log('✅ Commands registered globally');
+    }
   } catch (error) {
-    console.error(error);
+    console.error('❌ Error registering commands:', error);
   }
-})();
-
-// Bot events
-client.on('ready', () => {
-  console.log(`Logged in as ${client.user.tag}!`);
 });
 
+// Bot events
 client.on('interactionCreate', async interaction => {
   if (!interaction.isCommand()) return;
 
   const { commandName, options, member } = interaction;
 
-  // Check if user has admin role
-  const hasAdminRole = member.roles.cache.has(process.env.ADMIN_ROLE_ID);
+  // Check if user has Administrator permission for BOTH commands
+  if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
+    await interaction.reply({ 
+      content: '❌ You need **Administrator** permissions to use this command.', 
+      ephemeral: true 
+    });
+    return;
+  }
 
   if (commandName === 'stats') {
     const username = options.getString('username');
     
-    // Find UserId from username (you'll need to implement this)
     const userId = await getUserIdFromUsername(username);
     
     if (!userId) {
@@ -128,11 +143,6 @@ client.on('interactionCreate', async interaction => {
   }
 
   if (commandName === 'setstats') {
-    if (!hasAdminRole) {
-      await interaction.reply({ content: 'You need admin permissions to use this command.', ephemeral: true });
-      return;
-    }
-
     const username = options.getString('username');
     const stat = options.getString('stat');
     const value = options.getInteger('value');
@@ -163,10 +173,7 @@ client.on('interactionCreate', async interaction => {
 
 // Helper function to get UserId from username
 async function getUserIdFromUsername(username) {
-  // You need to implement this based on how your system stores usernames
-  // This is a placeholder - you might need a separate lookup table
   try {
-    // If you have a username-to-ID mapping in Firebase
     const snapshot = await db.ref(`/usernames/${username.toLowerCase()}`).once('value');
     return snapshot.val();
   } catch (error) {
@@ -174,6 +181,8 @@ async function getUserIdFromUsername(username) {
     return null;
   }
 }
+
+// HTTP server for Render
 const server = http.createServer((req, res) => {
   res.writeHead(200, { 'Content-Type': 'text/plain' });
   res.end('Discord Bot is online');
@@ -181,8 +190,12 @@ const server = http.createServer((req, res) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`✅ HTTP server listening on port ${PORT} for Render health checks`);
+  console.log(`🌐 HTTP server listening on port ${PORT} for Render health checks`);
 });
+
 // Login
-client.login(process.env.DISCORD_TOKEN);
+client.login(process.env.DISCORD_TOKEN).catch(error => {
+  console.error('❌ Failed to login:', error);
+});
+
 
