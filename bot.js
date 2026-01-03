@@ -151,7 +151,7 @@ client.on('interactionCreate', async interaction => {
       await interaction.reply({ embeds: [embed] });
     } catch (error) {
       console.error(error);
-      await interaction.reply({ content: 'Error fetching stats.', ephemeral: true });
+      await interaction.reply({ content: 'Error fetching stats.', ephemeral: false });
     }
   }
 
@@ -191,10 +191,17 @@ client.on('interactionCreate', async interaction => {
         .setTitle('Stats Updated')
         .setColor(0x00FF00)
         .setDescription(`Set **${stat}** to **${value}** for ${displayName}`)
-        .addFields(
-          { name: 'UserId', value: userId.toString(), inline: true }
-        )
-        .setTimestamp();
+         .addFields(
+                { name: '**Robux**', value: `<:smallrobux:1434592131271626772> **${formatNumber(updatedData.robux || 0)}**`, inline: false },
+                { name: '**Giftbux**', value: `<:giftbux:1400851141218013311> **${formatNumber(updatedData.giftbux || 0)}**`, inline: true },
+                { name: '**Donated**', value: `<:smallrobux:1434592131271626772> **${formatNumber(updatedData.donated || 0)}**`, inline: false },
+                { name: '**Raised**', value: `<:smallrobux:1434592131271626772> **${formatNumber(updatedData.raised || 0)}**`, inline: false }
+            )
+            .addFields(
+                { name: '**User ID**', value: `**${userId}**`, inline: true }
+            )
+            .setTimestamp();
+
 
       await interaction.reply({ embeds: [embed], ephemeral: true });
     } catch (error) {
@@ -230,5 +237,6 @@ server.listen(PORT, () => {
 client.login(process.env.DISCORD_TOKEN).catch(error => {
   console.error('❌ Failed to login:', error);
 });
+
 
 
