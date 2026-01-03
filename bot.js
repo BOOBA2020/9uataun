@@ -33,8 +33,8 @@ const commands = [
     .setDescription('View player stats from Firebase (Admin Only)')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // ADMIN ONLY
     .addStringOption(option =>
-      option.setName('username')
-        .setDescription('Roblox username')
+      option.setName('userid')  // FIXED: lowercase 'userid'
+        .setDescription('Roblox User ID (number)')
         .setRequired(true)),
   
   new SlashCommandBuilder()
@@ -42,8 +42,8 @@ const commands = [
     .setDescription('Admin: Set player stats')
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // ADMIN ONLY
     .addStringOption(option =>
-      option.setName('username')
-        .setDescription('Roblox username')
+      option.setName('userid')  // FIXED: lowercase 'userid'
+        .setDescription('Roblox User ID (number)')
         .setRequired(true))
     .addStringOption(option =>
       option.setName('stat')
@@ -106,32 +106,43 @@ client.on('interactionCreate', async interaction => {
   }
 
   if (commandName === 'stats') {
-    const username = options.getString('username');
+    const userIdInput = options.getString('userid');  // FIXED: lowercase 'userid'
     
-    const userId = await getUserIdFromUsername(username);
-    
-    if (!userId) {
-      await interaction.reply({ content: `Player "${username}" not found.`, ephemeral: true });
+    // Validate UserId is a number
+    const userId = parseInt(userIdInput);
+    if (isNaN(userId)) {
+      await interaction.reply({ 
+        content: '❌ Please enter a valid User ID (numbers only).', 
+        ephemeral: true 
+      });
       return;
     }
 
     try {
+      // Get username from Firebase if available
+      const username = await getUsernameFromUserId(userId);
+      const displayName = username || `User ${userId}`;
+      
       const snapshot = await db.ref(`/${userId}`).once('value');
       const data = snapshot.val();
       
       if (!data) {
-        await interaction.reply({ content: `No stats found for ${username}.`, ephemeral: true });
+        await interaction.reply({ 
+          content: `No stats found for User ID: ${userId}.`, 
+          ephemeral: true 
+        });
         return;
       }
 
       const embed = new EmbedBuilder()
-        .setTitle(`📊 Stats for ${username}`)
+        .setTitle(`📊 Stats for ${displayName}`)
         .setColor(0x00AE86)
         .addFields(
-          { name: '🪙 Robux', value: `${data.robux || 0}`, inline: true },
-          { name: '🎁 Giftbux', value: `${data.giftbux || 0}`, inline: true },
-          { name: '📤 Donated', value: `${data.donated || 0}`, inline: true },
-          { name: '📥 Raised', value: `${data.raised || 0}`, inline: true }
+          { name: 'User ID', value: userId.toString(), inline: true },
+          { name: '<:smallrobux:1434592131271626772> Robux', value: `${data.robux || 0}`, inline: false },
+          { name: '<:giftbux:1400851141218013311> Giftbux', value: `${data.giftbux || 0}`, inline: true },
+          { name: '<:smallrobux:1434592131271626772> Donated', value: `${data.donated || 0}`, inline: false },
+          { name: '<:smallrobux:1434592131271626772> Raised', value: `${data.raised || 0}`, inline: false }
         )
         .setTimestamp();
 
@@ -143,24 +154,44 @@ client.on('interactionCreate', async interaction => {
   }
 
   if (commandName === 'setstats') {
-    const username = options.getString('username');
+    const userIdInput = options.getString('userid');  // FIXED: lowercase 'userid'
     const stat = options.getString('stat');
     const value = options.getInteger('value');
     
-    const userId = await getUserIdFromUsername(username);
-    
-    if (!userId) {
-      await interaction.reply({ content: `Player "${username}" not found.`, ephemeral: true });
+    // Validate UserId
+    const userId = parseInt(userIdInput);
+    if (isNaN(userId)) {
+      await interaction.reply({ 
+        content: '❌ Please enter a valid User ID (numbers only).', 
+        ephemeral: true 
+      });
       return;
     }
 
     try {
+      // Check if user exists first
+      const snapshot = await db.ref(`/${userId}`).once('value');
+      if (!snapshot.exists()) {
+        await interaction.reply({ 
+          content: `❌ No user found with ID: ${userId}.`, 
+          ephemeral: true 
+        });
+        return;
+      }
+      
       await db.ref(`/${userId}/${stat}`).set(value);
+      
+      // Get username for display
+      const username = await getUsernameFromUserId(userId);
+      const displayName = username || `User ${userId}`;
       
       const embed = new EmbedBuilder()
         .setTitle('✅ Stats Updated')
         .setColor(0x00FF00)
-        .setDescription(`Set **${stat}** to **${value}** for ${username}`)
+        .setDescription(`Set **${stat}** to **${value}** for ${displayName}`)
+        .addFields(
+          { name: 'User ID', value: userId.toString(), inline: true }
+        )
         .setTimestamp();
 
       await interaction.reply({ embeds: [embed], ephemeral: true });
@@ -171,10 +202,10 @@ client.on('interactionCreate', async interaction => {
   }
 });
 
-// Helper function to get UserId from username
-async function getUserIdFromUsername(username) {
+// Helper function to get username from UserId
+async function getUsernameFromUserId(userId) {
   try {
-    const snapshot = await db.ref(`/usernames/${username.toLowerCase()}`).once('value');
+    const snapshot = await db.ref(`/${userId}/username`).once('value');
     return snapshot.val();
   } catch (error) {
     console.error('Username lookup error:', error);
@@ -197,5 +228,4 @@ server.listen(PORT, () => {
 client.login(process.env.DISCORD_TOKEN).catch(error => {
   console.error('❌ Failed to login:', error);
 });
-
 
