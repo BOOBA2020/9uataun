@@ -158,7 +158,7 @@ client.on('interactionCreate', async interaction => {
   if (commandName === 'setstats') {
     const userIdInput = options.getString('userid');  // FIXED: lowercase 'userid'
     const stat = options.getString('stat');
-    const value = options.getInteger('value');
+    const value = options.getInteger('Amount');
     
     // Validate UserId
     const userId = parseInt(userIdInput);
@@ -182,6 +182,8 @@ client.on('interactionCreate', async interaction => {
       }
       
       await db.ref(`/${userId}/${stat}`).set(value);
+            const updatedSnapshot = await db.ref(`/${userId}`).once('value');
+        const updatedData = updatedSnapshot.val();
       
       // Get username for display
       const username = await getUsernameFromUserId(userId);
@@ -237,6 +239,7 @@ server.listen(PORT, () => {
 client.login(process.env.DISCORD_TOKEN).catch(error => {
   console.error('❌ Failed to login:', error);
 });
+
 
 
 
