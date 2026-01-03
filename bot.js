@@ -37,7 +37,7 @@ const commands = [
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // ADMIN ONLY
     .addStringOption(option =>
       option.setName('userid')  // FIXED: lowercase 'userid'
-        .setDescription('Roblox User ID (number)')
+        .setDescription('Roblox User ID ')
         .setRequired(true)),
   
   new SlashCommandBuilder()
@@ -46,7 +46,7 @@ const commands = [
     .setDefaultMemberPermissions(PermissionFlagsBits.Administrator) // ADMIN ONLY
     .addStringOption(option =>
       option.setName('userid')  // FIXED: lowercase 'userid'
-        .setDescription('Roblox User ID (number)')
+        .setDescription('Roblox User ID ')
         .setRequired(true))
     .addStringOption(option =>
       option.setName('stat')
@@ -139,7 +139,7 @@ client.on('interactionCreate', async interaction => {
 
       const embed = new EmbedBuilder()
         .setTitle(`Stats for ${displayName}`)
-        .setColor(0x00AE86)
+        .setColor(0xFF0000)
   .addFields(
   { name: '**Robux**', value: `<:smallrobux:1434592131271626772> **${formatNumber(data.robux || 0)}**`, inline: false },
   { name: '**Giftbux**', value: `<:giftbux:1400851141218013311> **${formatNumber(data.giftbux || 0)}**`, inline: true },
@@ -237,6 +237,7 @@ server.listen(PORT, () => {
 client.login(process.env.DISCORD_TOKEN).catch(error => {
   console.error('❌ Failed to login:', error);
 });
+
 
 
 
