@@ -25,7 +25,10 @@ admin.initializeApp({
 
 const db = admin.database();
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
-
+function formatNumber(num) {
+  if (typeof num !== 'number') num = Number(num) || 0;
+  return num.toLocaleString('en-US'); // This adds commas
+}
 // Command definitions - BOTH COMMANDS REQUIRE ADMIN PERMS
 const commands = [
   new SlashCommandBuilder()
@@ -99,7 +102,7 @@ client.on('interactionCreate', async interaction => {
   // Check if user has Administrator permission for BOTH commands
   if (!member.permissions.has(PermissionFlagsBits.Administrator)) {
     await interaction.reply({ 
-      content: '❌ You need **Administrator** permissions to use this command.', 
+      content: 'You need **Administrator** permissions to use this command.', 
       ephemeral: true 
     });
     return;
@@ -112,7 +115,7 @@ client.on('interactionCreate', async interaction => {
     const userId = parseInt(userIdInput);
     if (isNaN(userId)) {
       await interaction.reply({ 
-        content: '❌ Please enter a valid User ID (numbers only).', 
+        content: 'Please enter a correct UserId.', 
         ephemeral: true 
       });
       return;
@@ -121,29 +124,28 @@ client.on('interactionCreate', async interaction => {
     try {
       // Get username from Firebase if available
       const username = await getUsernameFromUserId(userId);
-      const displayName = username || `User ${userId}`;
+      const displayName = username || `${userId}`;
       
       const snapshot = await db.ref(`/${userId}`).once('value');
       const data = snapshot.val();
       
       if (!data) {
         await interaction.reply({ 
-          content: `No stats found for User ID: ${userId}.`, 
+          content: `No stats found for ${userId}.`, 
           ephemeral: true 
         });
         return;
       }
 
       const embed = new EmbedBuilder()
-        .setTitle(`📊 Stats for ${displayName}`)
+        .setTitle(`Stats for ${displayName}`)
         .setColor(0x00AE86)
-        .addFields(
-          { name: 'User ID', value: userId.toString(), inline: true },
-          { name: '<:smallrobux:1434592131271626772> Robux', value: `${data.robux || 0}`, inline: false },
-          { name: '<:giftbux:1400851141218013311> Giftbux', value: `${data.giftbux || 0}`, inline: true },
-          { name: '<:smallrobux:1434592131271626772> Donated', value: `${data.donated || 0}`, inline: false },
-          { name: '<:smallrobux:1434592131271626772> Raised', value: `${data.raised || 0}`, inline: false }
-        )
+  .addFields(
+  { name: '**Robux**', value: `<:smallrobux:1434592131271626772> **${formatNumber(data.robux || 0)}**`, inline: false },
+  { name: '**Giftbux**', value: `<:giftbux:1400851141218013311> **${formatNumber(data.giftbux || 0)}**`, inline: true },
+  { name: '**Donated**', value: `<:smallrobux:1434592131271626772> **${formatNumber(data.donated || 0)}**`, inline: false },
+  { name: '**Raised**', value: `<:smallrobux:1434592131271626772> **${formatNumber(data.raised || 0)}**`, inline: false }
+)
         .setTimestamp();
 
       await interaction.reply({ embeds: [embed] });
@@ -162,7 +164,7 @@ client.on('interactionCreate', async interaction => {
     const userId = parseInt(userIdInput);
     if (isNaN(userId)) {
       await interaction.reply({ 
-        content: '❌ Please enter a valid User ID (numbers only).', 
+        content: 'Please enter a correct User ID.', 
         ephemeral: true 
       });
       return;
@@ -173,7 +175,7 @@ client.on('interactionCreate', async interaction => {
       const snapshot = await db.ref(`/${userId}`).once('value');
       if (!snapshot.exists()) {
         await interaction.reply({ 
-          content: `❌ No user found with ID: ${userId}.`, 
+          content: `No player found with ${userId}.`, 
           ephemeral: true 
         });
         return;
@@ -186,11 +188,11 @@ client.on('interactionCreate', async interaction => {
       const displayName = username || `User ${userId}`;
       
       const embed = new EmbedBuilder()
-        .setTitle('✅ Stats Updated')
+        .setTitle('Stats Updated')
         .setColor(0x00FF00)
         .setDescription(`Set **${stat}** to **${value}** for ${displayName}`)
         .addFields(
-          { name: 'User ID', value: userId.toString(), inline: true }
+          { name: 'UserId', value: userId.toString(), inline: true }
         )
         .setTimestamp();
 
@@ -228,4 +230,5 @@ server.listen(PORT, () => {
 client.login(process.env.DISCORD_TOKEN).catch(error => {
   console.error('❌ Failed to login:', error);
 });
+
 
