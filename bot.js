@@ -59,8 +59,8 @@ const commands = [
           { name: 'Raised', value: 'raised' }
         ))
     .addIntegerOption(option =>
-      option.setName('value')
-        .setDescription('New value')
+      option.setName('Amount')
+        .setDescription('New Amount')
         .setRequired(true))
 ];
 
@@ -237,6 +237,7 @@ server.listen(PORT, () => {
 client.login(process.env.DISCORD_TOKEN).catch(error => {
   console.error('❌ Failed to login:', error);
 });
+
 
 
 
