@@ -59,8 +59,8 @@ const commands = [
           { name: 'Raised', value: 'raised' }
         ))
     .addIntegerOption(option =>
-      option.setName('Amount')
-        .setDescription('New Amount')
+      option.setName('valu')
+        .setDescription('New valu')
         .setRequired(true))
 ];
 
@@ -158,7 +158,7 @@ client.on('interactionCreate', async interaction => {
   if (commandName === 'setstats') {
     const userIdInput = options.getString('userid');  // FIXED: lowercase 'userid'
     const stat = options.getString('stat');
-    const value = options.getInteger('Amount');
+    const value = options.getInteger('valu');
     
     // Validate UserId
     const userId = parseInt(userIdInput);
